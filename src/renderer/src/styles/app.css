@@ -131,6 +131,10 @@ select {
   margin-bottom: 20px;
 }
 
+.actions.actions-4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .actions button,
 .primary,
 .ghost,
@@ -283,6 +287,57 @@ select {
   cursor: pointer;
   padding: 0;
   margin-bottom: 16px;
+}
+
+.domain-add {
+  display: flex;
+  gap: 10px;
+}
+
+.domain-add input,
+.domain-edit-row input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.domain-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.domain-list li {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.domain-row,
+.domain-edit-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.domain-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.domain-edit-row {
+  width: 100%;
+}
+
+.domain-edit-row .primary,
+.domain-edit-row .ghost,
+.domain-actions .ghost,
+.domain-actions .danger-btn {
+  padding: 8px 12px;
 }
 
 @media (max-width: 720px) {

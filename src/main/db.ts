@@ -1,5 +1,11 @@
 import Database from 'better-sqlite3'
-import type { ExamPart } from '../shared/domains'
+import {
+  DEFAULT_DOMAINS_BY_PART,
+  normalizeDomainName,
+  validateDomainName,
+  type DomainRecord,
+  type ExamPart,
+} from '../shared/domains'
 import type { MissReason } from '../shared/widgetState'
 
 export type AttemptRecord = {
@@ -68,6 +74,14 @@ CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS domains (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  exam_part INTEGER NOT NULL CHECK (exam_part IN (1, 2, 3)),
+  name TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  UNIQUE (exam_part, name)
+);
 `
 
 export class WeakTrackerDb {
@@ -85,6 +99,20 @@ export class WeakTrackerDb {
     )
     for (const [key, value] of Object.entries(defaults)) {
       insert.run(key, value)
+    }
+    this.seedDefaultDomains()
+  }
+
+  private seedDefaultDomains(): void {
+    const count = this.db.prepare('SELECT COUNT(*) as c FROM domains').get() as { c: number }
+    if (count.c > 0) return
+    const insert = this.db.prepare(
+      'INSERT INTO domains (exam_part, name, sort_order) VALUES (?, ?, ?)',
+    )
+    for (const part of [1, 2, 3] as ExamPart[]) {
+      DEFAULT_DOMAINS_BY_PART[part].forEach((name, index) => {
+        insert.run(part, name, index)
+      })
     }
   }
 
@@ -218,6 +246,103 @@ export class WeakTrackerDb {
       questionsLogged,
       correct,
       accuracy: questionsLogged === 0 ? 0 : correct / questionsLogged,
+    }
+  }
+
+  listDomains(examPart: ExamPart): DomainRecord[] {
+    return this.db
+      .prepare(
+        `SELECT id, exam_part, name, sort_order
+         FROM domains
+         WHERE exam_part = ?
+         ORDER BY sort_order ASC, id ASC`,
+      )
+      .all(examPart) as DomainRecord[]
+  }
+
+  listDomainNames(examPart: ExamPart): string[] {
+    return this.listDomains(examPart).map((d) => d.name)
+  }
+
+  getDomain(id: number): DomainRecord | undefined {
+    return this.db
+      .prepare('SELECT id, exam_part, name, sort_order FROM domains WHERE id = ?')
+      .get(id) as DomainRecord | undefined
+  }
+
+  createDomain(examPart: ExamPart, rawName: string): DomainRecord {
+    const name = normalizeDomainName(rawName)
+    const error = validateDomainName(name)
+    if (error) throw new Error(error)
+
+    const existing = this.db
+      .prepare('SELECT id FROM domains WHERE exam_part = ? AND name = ?')
+      .get(examPart, name)
+    if (existing) throw new Error('Domain already exists for this part')
+
+    const maxRow = this.db
+      .prepare('SELECT COALESCE(MAX(sort_order), -1) as m FROM domains WHERE exam_part = ?')
+      .get(examPart) as { m: number }
+
+    const result = this.db
+      .prepare(
+        'INSERT INTO domains (exam_part, name, sort_order) VALUES (?, ?, ?)',
+      )
+      .run(examPart, name, maxRow.m + 1)
+
+    return this.getDomain(Number(result.lastInsertRowid))!
+  }
+
+  updateDomain(id: number, rawName: string): DomainRecord {
+    const current = this.getDomain(id)
+    if (!current) throw new Error('Domain not found')
+
+    const name = normalizeDomainName(rawName)
+    const error = validateDomainName(name)
+    if (error) throw new Error(error)
+
+    if (name !== current.name) {
+      const clash = this.db
+        .prepare('SELECT id FROM domains WHERE exam_part = ? AND name = ? AND id != ?')
+        .get(current.exam_part, name, id)
+      if (clash) throw new Error('Domain already exists for this part')
+
+      const rename = this.db.transaction(() => {
+        this.db
+          .prepare('UPDATE domains SET name = ? WHERE id = ?')
+          .run(name, id)
+        this.db
+          .prepare(
+            'UPDATE attempts SET domain = ? WHERE exam_part = ? AND domain = ?',
+          )
+          .run(name, current.exam_part, current.name)
+        this.db
+          .prepare(
+            'UPDATE batch_sessions SET domain = ? WHERE exam_part = ? AND domain = ?',
+          )
+          .run(name, current.exam_part, current.name)
+
+        if (this.getLastDomain(current.exam_part) === current.name) {
+          this.setLastDomain(current.exam_part, name)
+        }
+      })
+      rename()
+    }
+
+    return this.getDomain(id)!
+  }
+
+  deleteDomain(id: number): void {
+    const current = this.getDomain(id)
+    if (!current) throw new Error('Domain not found')
+    this.db.prepare('DELETE FROM domains WHERE id = ?').run(id)
+    if (this.getLastDomain(current.exam_part) === current.name) {
+      const next = this.listDomainNames(current.exam_part)[0]
+      const raw = this.getSetting('last_domain_by_part') ?? '{}'
+      const map = JSON.parse(raw) as Record<string, string>
+      if (next) map[String(current.exam_part)] = next
+      else delete map[String(current.exam_part)]
+      this.setSetting('last_domain_by_part', JSON.stringify(map))
     }
   }
 }

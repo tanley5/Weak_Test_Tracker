@@ -19,9 +19,9 @@ npm run dev       # Electron app (rebuilds better-sqlite3 for Electron)
 
 SQLite file lives in the Electron `userData` directory (`weak-tracker.db`).
 
-## Part 2 / 3 domains
+## Domains
 
-Edit `src/shared/domains.ts` and fill `DOMAINS_BY_PART[2]` / `[3]` when you have the HOCK syllabus breakdown.
+Part 1 ships with a seeded list. Use **Manage domains** in the app to add, rename, or delete domains for the active exam part (Part 2/3 start empty). Renames update historical attempt/batch labels for that part.
 
 ## Tests
 

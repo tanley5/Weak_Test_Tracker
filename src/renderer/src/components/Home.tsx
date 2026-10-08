@@ -7,9 +7,10 @@ import { BatchEntryModal } from './BatchEntryModal'
 
 type Props = {
   onOpenDashboard: () => void
+  onOpenDomains: (part: ExamPart) => void
 }
 
-export function Home({ onOpenDashboard }: Props) {
+export function Home({ onOpenDashboard, onOpenDomains }: Props) {
   const [settings, setSettings] = useState<AppSettings | null>(null)
   const [today, setToday] = useState<TodayStats | null>(null)
   const [running, setRunning] = useState<TodayStats | null>(null)
@@ -31,9 +32,16 @@ export function Home({ onOpenDashboard }: Props) {
 
   useEffect(() => {
     void refresh()
-    return window.weakTracker.onSettingsChanged(() => {
+    const offSettings = window.weakTracker.onSettingsChanged(() => {
       void refresh()
     })
+    const offDomains = window.weakTracker.onDomainsChanged(() => {
+      void refresh()
+    })
+    return () => {
+      offSettings()
+      offDomains()
+    }
   }, [refresh])
 
   async function onPartChange(part: ExamPart) {
@@ -99,7 +107,7 @@ export function Home({ onOpenDashboard }: Props) {
         </div>
       </div>
 
-      <div className="actions">
+      <div className="actions actions-4">
         <button type="button" onClick={() => void window.weakTracker.expandWidget()}>
           Log question
         </button>
@@ -109,12 +117,19 @@ export function Home({ onOpenDashboard }: Props) {
         <button type="button" className="secondary" onClick={onOpenDashboard}>
           View dashboard
         </button>
+        <button
+          type="button"
+          className="secondary"
+          onClick={() => onOpenDomains(settings.active_exam_part)}
+        >
+          Manage domains
+        </button>
       </div>
 
       {domains.length === 0 && (
         <p className="error">
-          No domains configured for Part {settings.active_exam_part} yet. Add them in
-          `src/shared/domains.ts`.
+          No domains configured for Part {settings.active_exam_part} yet. Use Manage domains to
+          add them.
         </p>
       )}
 

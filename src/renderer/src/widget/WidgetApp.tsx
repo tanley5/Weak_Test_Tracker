@@ -1,6 +1,5 @@
 import { useEffect, useReducer, useRef } from 'react'
 import type { AppSettings } from '../../../shared/api'
-import { getDomainsForPart } from '../../../shared/domains'
 import { createWidgetState, reduceWidget } from '../../../shared/widgetState'
 
 function defaultDomain(settings: AppSettings, domains: string[]): string {
@@ -10,33 +9,28 @@ function defaultDomain(settings: AppSettings, domains: string[]): string {
 }
 
 export function WidgetApp() {
-  const [state, dispatch] = useReducer(
-    reduceWidget,
-    createWidgetState([], ''),
-  )
+  const [state, dispatch] = useReducer(reduceWidget, createWidgetState([], ''))
   const logging = useRef(false)
 
   useEffect(() => {
-    async function boot() {
-      const settings = await window.weakTracker.getSettings()
-      const domains = getDomainsForPart(settings.active_exam_part)
+    async function loadDomains(settings?: AppSettings) {
+      const s = settings ?? (await window.weakTracker.getSettings())
+      const domains = await window.weakTracker.getDomains()
       dispatch({
         type: 'set_domains',
         domains,
-        defaultDomain: defaultDomain(settings, domains),
+        defaultDomain: defaultDomain(s, domains),
       })
     }
-    void boot()
+
+    void loadDomains()
 
     const offSettings = window.weakTracker.onSettingsChanged((settings) => {
-      const domains = getDomainsForPart(settings.active_exam_part)
-      dispatch({
-        type: 'set_domains',
-        domains,
-        defaultDomain: defaultDomain(settings, domains),
-      })
+      void loadDomains(settings)
     })
-
+    const offDomains = window.weakTracker.onDomainsChanged(() => {
+      void loadDomains()
+    })
     const offExpand = window.weakTracker.onExpandWidget(() => {
       dispatch({ type: 'expand', trigger: 'hotkey' })
       window.widgetShell?.notifyExpanded()
@@ -44,6 +38,7 @@ export function WidgetApp() {
 
     return () => {
       offSettings()
+      offDomains()
       offExpand()
     }
   }, [])
@@ -91,6 +86,7 @@ export function WidgetApp() {
             value={state.domain}
             onChange={(e) => dispatch({ type: 'set_domain', domain: e.target.value })}
           >
+            {state.domains.length === 0 && <option value="">No domains</option>}
             {state.domains.map((d) => (
               <option key={d} value={d}>
                 {d}
@@ -101,12 +97,18 @@ export function WidgetApp() {
 
         {state.step === 'awaiting_result' && (
           <div className="row">
-            <button type="button" className="ok" onClick={() => dispatch({ type: 'answer', correct: true })}>
+            <button
+              type="button"
+              className="ok"
+              disabled={!state.domain}
+              onClick={() => dispatch({ type: 'answer', correct: true })}
+            >
               Correct
             </button>
             <button
               type="button"
               className="bad"
+              disabled={!state.domain}
               onClick={() => dispatch({ type: 'answer', correct: false })}
             >
               Incorrect

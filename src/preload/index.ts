@@ -17,6 +17,10 @@ const api: WeakTrackerApi = {
   }) => ipcRenderer.invoke('attempts:create', input),
   getDashboard: (domainFilter?: string) => ipcRenderer.invoke('dashboard:get', domainFilter),
   getDomains: () => ipcRenderer.invoke('domains:list'),
+  listDomains: () => ipcRenderer.invoke('domains:listRecords'),
+  createDomain: (name: string) => ipcRenderer.invoke('domains:create', name),
+  updateDomain: (id: number, name: string) => ipcRenderer.invoke('domains:update', id, name),
+  deleteDomain: (id: number) => ipcRenderer.invoke('domains:delete', id),
   expandWidget: () => ipcRenderer.invoke('widget:expand'),
   onSettingsChanged: (cb) => {
     const listener = (_: Electron.IpcRendererEvent, settings: unknown) => {
@@ -24,6 +28,11 @@ const api: WeakTrackerApi = {
     }
     ipcRenderer.on('settings:changed', listener)
     return () => ipcRenderer.removeListener('settings:changed', listener)
+  },
+  onDomainsChanged: (cb) => {
+    const listener = () => cb()
+    ipcRenderer.on('domains:changed', listener)
+    return () => ipcRenderer.removeListener('domains:changed', listener)
   },
   onExpandWidget: (cb) => {
     const listener = () => cb()

@@ -1,6 +1,5 @@
 import { BrowserWindow, ipcMain } from 'electron'
 import type { ExamPart } from '../shared/domains'
-import { getDomainsForPart } from '../shared/domains'
 import {
   combineDomainAccuracy,
   missReasonBreakdown,
@@ -34,6 +33,12 @@ function broadcastSettings(db: WeakTrackerDb): void {
   }
 }
 
+function broadcastDomainsChanged(): void {
+  for (const win of BrowserWindow.getAllWindows()) {
+    win.webContents.send('domains:changed')
+  }
+}
+
 export function registerIpc(db: WeakTrackerDb, expandWidget: () => void): void {
   ipcMain.handle('settings:get', () => readSettings(db))
 
@@ -61,7 +66,31 @@ export function registerIpc(db: WeakTrackerDb, expandWidget: () => void): void {
 
   ipcMain.handle('domains:list', () => {
     const settings = readSettings(db)
-    return getDomainsForPart(settings.active_exam_part)
+    return db.listDomainNames(settings.active_exam_part)
+  })
+
+  ipcMain.handle('domains:listRecords', () => {
+    const settings = readSettings(db)
+    return db.listDomains(settings.active_exam_part)
+  })
+
+  ipcMain.handle('domains:create', (_e, name: string) => {
+    const settings = readSettings(db)
+    const row = db.createDomain(settings.active_exam_part, name)
+    broadcastDomainsChanged()
+    return row
+  })
+
+  ipcMain.handle('domains:update', (_e, id: number, name: string) => {
+    const row = db.updateDomain(id, name)
+    broadcastDomainsChanged()
+    broadcastSettings(db)
+    return row
+  })
+
+  ipcMain.handle('domains:delete', (_e, id: number) => {
+    db.deleteDomain(id)
+    broadcastDomainsChanged()
   })
 
   ipcMain.handle(
