@@ -8,8 +8,8 @@ Desktop EA exam practice logger (Electron + React + SQLite). Track per-question 
 - **Exam part CRUD** — add, rename, or delete parts in **Manage exam parts** (seeded Part 1–3; cannot delete the last part or a part with logged data)
 - **Domain list CRUD** — add, rename, and delete domains per active part in **Manage domains** (Part 1 is seeded; renames update historical logs)
 - **Batch entry** — domain + correct/total + date → `batch_sessions`
-- **Floating widget** — always-on-top pill; expands on click, focus, or `Ctrl+Shift+Q` (⌘⇧Q on Mac); **collapses back to pill when focus leaves**; **Open main window** from the expanded pill
-- **Close vs quit** — closing the main window (or Home → Exit…) asks whether to keep the pill running or quit the whole app
+- **Floating widget** — always-on-top Log Q pill; expands on click, focus, or `Ctrl+Shift+Q` (⌘⇧Q on Mac); collapses when focus leaves
+- **Close vs quit** — hide the main window and keep the pill, or quit the whole app
 - **Dashboard** — needs-drilling list, heatmap, weekly trend, miss-reason breakdown
 - **System theme** — light/dark UI follows macOS (or OS) appearance
 
@@ -53,6 +53,18 @@ Because the build is unsigned, Gatekeeper may block the first launch: right-clic
 xattr -cr "/Applications/Weak-Area Tracker.app"
 ```
 
+## Windows & quit behavior
+
+The app runs with two surfaces: the **main window** and the always-on-top **Log Q pill**.
+
+| Action | Result |
+| --- | --- |
+| Close main window (red X) or Home → **Exit…** | Dialog: **Main window only** (pill stays) / **Quit app** (both close) / **Cancel** |
+| Expanded pill → **Open main window** | Brings the dashboard back |
+| Dock / taskbar click (macOS activate) | Reopens the main window (pill keeps running) |
+
+While only the pill is open you can keep logging questions without the full UI.
+
 ## Develop
 
 ```bash
@@ -72,6 +84,7 @@ npm run dist:mac  # Build + package macOS DMG into dist/
 Core logic is TDD’d under `tests/`:
 
 - domains, exam parts, stats aggregation, widget expand/collapse (including blur → pill)
+- app close dialog choice mapping (main-only vs quit)
 - SQLite migrate / CRUD / today stats
 - batch form validation
 - system theme chart helpers
