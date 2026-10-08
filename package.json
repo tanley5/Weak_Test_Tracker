@@ -8,13 +8,13 @@
     "dev": "npm run rebuild:electron && electron-vite dev",
     "build": "npm run rebuild:electron && electron-vite build",
     "preview": "electron-vite preview",
-    "test": "npm run rebuild:node && vitest run",
+    "test": "npm run rebuild:node && vitest run && npm run rebuild:electron",
     "test:watch": "npm run rebuild:node && vitest",
     "rebuild:node": "npm rebuild better-sqlite3",
-    "rebuild:electron": "electron-builder install-app-deps",
-    "postinstall": "npm rebuild better-sqlite3",
-    "dist": "npm run build && electron-builder",
-    "dist:mac": "npm run build && electron-builder --mac dmg"
+    "rebuild:electron": "electron-rebuild -f -w better-sqlite3",
+    "postinstall": "electron-rebuild -f -w better-sqlite3",
+    "dist": "npm run rebuild:electron && npm run build && electron-builder --config.npmRebuild=false",
+    "dist:mac": "rm -rf dist && npm run rebuild:electron && npm run build && electron-builder --mac dmg --config.npmRebuild=false"
   },
   "build": {
     "appId": "com.tanley.weaktracker",
@@ -47,6 +47,7 @@
     "recharts": "^2.15.1"
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.2.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
     "@types/better-sqlite3": "^7.6.12",

@@ -17,21 +17,33 @@ export function Home({ onOpenDashboard, onOpenDomains }: Props) {
   const [domains, setDomains] = useState<string[]>([])
   const [showBatch, setShowBatch] = useState(false)
 
+  const [loadError, setLoadError] = useState<string | null>(null)
+
   const refresh = useCallback(async () => {
-    const [s, t, r, d] = await Promise.all([
-      window.weakTracker.getSettings(),
-      window.weakTracker.getTodayStats(),
-      window.weakTracker.getRunningAccuracy(),
-      window.weakTracker.getDomains(),
-    ])
-    setSettings(s)
-    setToday(t)
-    setRunning(r)
-    setDomains(d)
+    if (!window.weakTracker) {
+      setLoadError('Preload API missing — restart the app (npm run rebuild:electron && npm run dev).')
+      return
+    }
+    try {
+      const [s, t, r, d] = await Promise.all([
+        window.weakTracker.getSettings(),
+        window.weakTracker.getTodayStats(),
+        window.weakTracker.getRunningAccuracy(),
+        window.weakTracker.getDomains(),
+      ])
+      setSettings(s)
+      setToday(t)
+      setRunning(r)
+      setDomains(d)
+      setLoadError(null)
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'Failed to load data')
+    }
   }, [])
 
   useEffect(() => {
     void refresh()
+    if (!window.weakTracker) return
     const offSettings = window.weakTracker.onSettingsChanged(() => {
       void refresh()
     })
@@ -53,6 +65,15 @@ export function Home({ onOpenDashboard, onOpenDomains }: Props) {
   async function onTargetChange(date: string) {
     const next = await window.weakTracker.setTargetExamDate(date)
     setSettings(next)
+  }
+
+  if (loadError) {
+    return (
+      <div className="app-shell">
+        <h1 className="brand">Weak-Area Tracker</h1>
+        <p className="error">{loadError}</p>
+      </div>
+    )
   }
 
   if (!settings || !today || !running) {

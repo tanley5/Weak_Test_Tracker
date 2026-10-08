@@ -1,6 +1,6 @@
 :root {
   color-scheme: light dark;
-  --pill-bg: rgba(255, 255, 255, 0.94);
+  --pill-bg: #ffffff;
   --ink: #14201a;
   --muted: #5a6b62;
   --accent: #2f7d62;
@@ -14,7 +14,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --pill-bg: rgba(20, 28, 36, 0.92);
+    --pill-bg: #1a222c;
     --ink: #e8eef4;
     --muted: #9aabbc;
     --accent: #3d9a7a;
@@ -31,7 +31,8 @@ body,
 #root {
   margin: 0;
   height: 100%;
-  background: transparent;
+  width: 100%;
+  background: var(--pill-bg);
   overflow: hidden;
   font-family: var(--font);
   color: var(--ink);
@@ -47,11 +48,14 @@ select {
 
 .widget-root {
   height: 100%;
+  width: 100%;
   padding: 4px;
+  box-sizing: border-box;
 }
 
 .pill {
   height: 100%;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -61,14 +65,17 @@ select {
   cursor: pointer;
   font-weight: 650;
   letter-spacing: 0.02em;
+  color: var(--ink);
 }
 
 .expanded {
   height: 100%;
+  width: 100%;
   background: var(--pill-bg);
   border: 1px solid var(--line);
   border-radius: 16px;
   padding: 12px;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 10px;

@@ -22,13 +22,15 @@ npm install
 npm run dev
 ```
 
-`npm install` installs dependencies and builds the native SQLite module. `npm run dev` rebuilds that module for Electron and launches the app.
+`npm install` installs dependencies and rebuilds the native SQLite module **for Electron**. Always start with `npm run dev` (it re-runs that Electron rebuild).
 
 To verify the suite after install:
 
 ```bash
 npm test
 ```
+
+`npm test` temporarily rebuilds SQLite for Node, then restores the Electron build. If the app opens blank after tests, run `npm run rebuild:electron` then `npm run dev`.
 
 SQLite data is stored in the Electron `userData` directory as `weak-tracker.db`.
 
@@ -41,7 +43,7 @@ npm install
 npm run dist:mac
 ```
 
-Open the resulting file, e.g. `dist/Weak-Area Tracker-0.1.0-arm64.dmg`, and drag **Weak-Area Tracker** into Applications.
+That rebuilds SQLite for Electron, bundles the app, and writes e.g. `dist/Weak-Area Tracker-0.1.0-arm64.dmg`. Open the DMG and drag **Weak-Area Tracker** into Applications.
 
 Because the build is unsigned, Gatekeeper may block the first launch: right-click the app → **Open**, or clear the quarantine flag:
 

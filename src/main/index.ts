@@ -1,6 +1,7 @@
 import {
   app,
   BrowserWindow,
+  dialog,
   globalShortcut,
   ipcMain,
   nativeTheme,
@@ -13,7 +14,7 @@ import { registerIpc } from './ipc'
 
 let mainWindow: BrowserWindow | null = null
 let widgetWindow: BrowserWindow | null = null
-let db: WeakTrackerDb
+let db: WeakTrackerDb | null = null
 let suppressNextFocusExpand = false
 
 function isDev(): boolean {
@@ -41,12 +42,17 @@ function createMainWindow(): void {
     minHeight: 600,
     title: 'Weak-Area Tracker',
     backgroundColor: windowBackgroundColor(),
+    show: false,
     webPreferences: {
       preload: preloadPath(),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
     },
+  })
+
+  mainWindow.once('ready-to-show', () => {
+    mainWindow?.show()
   })
 
   mainWindow.on('closed', () => {
@@ -56,6 +62,10 @@ function createMainWindow(): void {
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
+  })
+
+  mainWindow.webContents.on('did-fail-load', (_e, code, desc, url) => {
+    console.error('Main window failed to load', { code, desc, url })
   })
 
   if (isDev() && process.env['ELECTRON_RENDERER_URL']) {
@@ -74,8 +84,8 @@ function widgetBounds(expanded: boolean): {
   const display = screen.getPrimaryDisplay()
   const { width: sw } = display.workAreaSize
   const { x: wx, y: wy } = display.workArea
-  const width = expanded ? 320 : 140
-  const height = expanded ? 240 : 44
+  const width = expanded ? 320 : 148
+  const height = expanded ? 240 : 48
   return {
     width,
     height,
@@ -85,7 +95,7 @@ function widgetBounds(expanded: boolean): {
 }
 
 function resizeWidget(expanded: boolean): void {
-  if (!widgetWindow) return
+  if (!widgetWindow || widgetWindow.isDestroyed()) return
   widgetWindow.setBounds(widgetBounds(expanded), true)
 }
 
@@ -94,15 +104,19 @@ function createWidgetWindow(): void {
   widgetWindow = new BrowserWindow({
     ...bounds,
     frame: false,
-    transparent: true,
+    // Opaque floating panel — transparent windows often paint blank on macOS
+    transparent: false,
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#1a222c' : '#ffffff',
     alwaysOnTop: true,
     resizable: false,
     maximizable: false,
     minimizable: false,
+    fullscreenable: false,
     skipTaskbar: true,
     hasShadow: true,
-    show: true,
+    show: false,
     focusable: true,
+    type: process.platform === 'darwin' ? 'panel' : 'toolbar',
     webPreferences: {
       preload: preloadPath(),
       contextIsolation: true,
@@ -111,8 +125,12 @@ function createWidgetWindow(): void {
     },
   })
 
-  widgetWindow.setAlwaysOnTop(true, 'floating')
+  widgetWindow.setAlwaysOnTop(true, 'screen-saver')
   widgetWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+
+  widgetWindow.once('ready-to-show', () => {
+    widgetWindow?.showInactive()
+  })
 
   widgetWindow.on('focus', () => {
     if (suppressNextFocusExpand) {
@@ -121,6 +139,10 @@ function createWidgetWindow(): void {
     }
     resizeWidget(true)
     widgetWindow?.webContents.send('widget:expand')
+  })
+
+  widgetWindow.webContents.on('did-fail-load', (_e, code, desc, url) => {
+    console.error('Widget failed to load', { code, desc, url })
   })
 
   widgetWindow.on('closed', () => {
@@ -135,7 +157,7 @@ function createWidgetWindow(): void {
 }
 
 function expandWidget(): void {
-  if (!widgetWindow) {
+  if (!widgetWindow || widgetWindow.isDestroyed()) {
     createWidgetWindow()
   }
   suppressNextFocusExpand = true
@@ -145,11 +167,28 @@ function expandWidget(): void {
   widgetWindow?.webContents.send('widget:expand')
 }
 
+function syncWidgetChromeTheme(): void {
+  if (!widgetWindow || widgetWindow.isDestroyed()) return
+  widgetWindow.setBackgroundColor(nativeTheme.shouldUseDarkColors ? '#1a222c' : '#ffffff')
+}
+
 app.whenReady().then(() => {
   nativeTheme.themeSource = 'system'
 
-  const dbPath = join(app.getPath('userData'), 'weak-tracker.db')
-  db = openDatabase(dbPath)
+  try {
+    const dbPath = join(app.getPath('userData'), 'weak-tracker.db')
+    db = openDatabase(dbPath)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('Failed to open database', err)
+    dialog.showErrorBox(
+      'Weak-Area Tracker failed to start',
+      `Could not open the local database.\n\n${message}\n\nIf you just ran tests, run: npm run rebuild:electron\nThen start the app with: npm run dev`,
+    )
+    app.quit()
+    return
+  }
+
   registerIpc(db, expandWidget)
 
   ipcMain.on('widget:collapsed', () => resizeWidget(false))
@@ -160,6 +199,7 @@ app.whenReady().then(() => {
 
   nativeTheme.on('updated', () => {
     syncWindowChromeTheme()
+    syncWidgetChromeTheme()
   })
 
   globalShortcut.register('CommandOrControl+Shift+Q', () => {
@@ -167,7 +207,10 @@ app.whenReady().then(() => {
   })
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createMainWindow()
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createMainWindow()
+      createWidgetWindow()
+    }
   })
 })
 
