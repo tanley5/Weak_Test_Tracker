@@ -68,7 +68,7 @@ export function DomainManager({ examPart, examPartName, onBack }: Props) {
   }
 
   async function onDelete(id: number, name: string) {
-    if (!confirm(`Remove “${name}” from Part ${examPart}? Past logs keep the old label.`)) {
+    if (!confirm(`Remove “${name}” from ${examPartName}? Past logs keep the old label.`)) {
       return
     }
     setBusy(true)
