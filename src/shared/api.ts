@@ -49,6 +49,8 @@ export type WeakTrackerApi = {
   updateExamPart: (id: number, name: string) => Promise<ExamPartRecord>
   deleteExamPart: (id: number) => Promise<void>
   expandWidget: () => Promise<void>
+  showMainWindow: () => Promise<void>
+  requestCloseMain: () => Promise<void>
   onSettingsChanged: (cb: (settings: AppSettings) => void) => () => void
   onDomainsChanged: (cb: () => void) => () => void
   onExamPartsChanged: (cb: () => void) => () => void

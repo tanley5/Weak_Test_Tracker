@@ -45,7 +45,13 @@ function broadcastExamPartsChanged(): void {
   }
 }
 
-export function registerIpc(db: WeakTrackerDb, expandWidget: () => void): void {
+export type AppShellActions = {
+  expandWidget: () => void
+  showMainWindow: () => void
+  requestCloseMain: () => void
+}
+
+export function registerIpc(db: WeakTrackerDb, shell: AppShellActions): void {
   ipcMain.handle('settings:get', () => readSettings(db))
 
   ipcMain.handle('settings:setActiveExamPart', (_e, part: ExamPart) => {
@@ -176,6 +182,14 @@ export function registerIpc(db: WeakTrackerDb, expandWidget: () => void): void {
   })
 
   ipcMain.handle('widget:expand', () => {
-    expandWidget()
+    shell.expandWidget()
+  })
+
+  ipcMain.handle('app:showMain', () => {
+    shell.showMainWindow()
+  })
+
+  ipcMain.handle('app:requestCloseMain', () => {
+    shell.requestCloseMain()
   })
 }

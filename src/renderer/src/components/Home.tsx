@@ -160,6 +160,13 @@ export function Home({ onOpenDashboard, onOpenDomains, onOpenExamParts }: Props)
         <button type="button" className="secondary" onClick={onOpenExamParts}>
           Manage exam parts
         </button>
+        <button
+          type="button"
+          className="secondary"
+          onClick={() => void window.weakTracker.requestCloseMain()}
+        >
+          Exit…
+        </button>
       </div>
 
       {domains.length === 0 && (

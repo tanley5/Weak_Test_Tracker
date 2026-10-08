@@ -137,3 +137,15 @@ select {
   font-size: 0.78rem;
   margin: 0;
 }
+
+.open-main {
+  margin-top: auto;
+  border: 1px solid var(--line);
+  background: var(--control-bg);
+  color: var(--accent);
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-weight: 650;
+  font-size: 0.85rem;
+}

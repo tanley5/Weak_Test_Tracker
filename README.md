@@ -8,7 +8,8 @@ Desktop EA exam practice logger (Electron + React + SQLite). Track per-question 
 - **Exam part CRUD** — add, rename, or delete parts in **Manage exam parts** (seeded Part 1–3; cannot delete the last part or a part with logged data)
 - **Domain list CRUD** — add, rename, and delete domains per active part in **Manage domains** (Part 1 is seeded; renames update historical logs)
 - **Batch entry** — domain + correct/total + date → `batch_sessions`
-- **Floating widget** — always-on-top pill; expands on click, focus, or `Ctrl+Shift+Q` (⌘⇧Q on Mac); **collapses back to pill when focus leaves**
+- **Floating widget** — always-on-top pill; expands on click, focus, or `Ctrl+Shift+Q` (⌘⇧Q on Mac); **collapses back to pill when focus leaves**; **Open main window** from the expanded pill
+- **Close vs quit** — closing the main window (or Home → Exit…) asks whether to keep the pill running or quit the whole app
 - **Dashboard** — needs-drilling list, heatmap, weekly trend, miss-reason breakdown
 - **System theme** — light/dark UI follows macOS (or OS) appearance
 

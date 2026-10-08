@@ -148,6 +148,14 @@ export function WidgetApp() {
             </div>
           </>
         )}
+
+        <button
+          type="button"
+          className="open-main"
+          onClick={() => void window.weakTracker.showMainWindow()}
+        >
+          Open main window
+        </button>
       </div>
     </div>
   )

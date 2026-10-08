@@ -26,6 +26,8 @@ const api: WeakTrackerApi = {
   updateExamPart: (id: number, name: string) => ipcRenderer.invoke('examParts:update', id, name),
   deleteExamPart: (id: number) => ipcRenderer.invoke('examParts:delete', id),
   expandWidget: () => ipcRenderer.invoke('widget:expand'),
+  showMainWindow: () => ipcRenderer.invoke('app:showMain'),
+  requestCloseMain: () => ipcRenderer.invoke('app:requestCloseMain'),
   onSettingsChanged: (cb) => {
     const listener = (_: Electron.IpcRendererEvent, settings: unknown) => {
       cb(settings as Parameters<typeof cb>[0])

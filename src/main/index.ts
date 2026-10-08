@@ -9,6 +9,7 @@ import {
   shell,
 } from 'electron'
 import { join } from 'path'
+import { CLOSE_DIALOG_BUTTONS, mapCloseDialogIndex } from '../shared/appLifecycle'
 import { openDatabase, type WeakTrackerDb } from './db'
 import { registerIpc } from './ipc'
 
@@ -16,6 +17,8 @@ let mainWindow: BrowserWindow | null = null
 let widgetWindow: BrowserWindow | null = null
 let db: WeakTrackerDb | null = null
 let suppressNextFocusExpand = false
+/** When true, close/quit proceeds without the main-vs-app prompt. */
+let isQuitting = false
 
 function isDev(): boolean {
   return !app.isPackaged
@@ -32,6 +35,54 @@ function windowBackgroundColor(): string {
 function syncWindowChromeTheme(): void {
   const color = windowBackgroundColor()
   mainWindow?.setBackgroundColor(color)
+}
+
+function askCloseMainOrQuit(parent?: BrowserWindow | null): 'main' | 'app' | 'cancel' {
+  const options: Electron.MessageBoxSyncOptions = {
+    type: 'question',
+    buttons: [...CLOSE_DIALOG_BUTTONS],
+    defaultId: 0,
+    cancelId: 2,
+    title: 'Close Weak-Area Tracker',
+    message: 'Close the main window or quit the app?',
+    detail:
+      'Main window only keeps the Log Q pill running so you can keep logging. Quit app closes everything.',
+  }
+  const result =
+    parent && !parent.isDestroyed()
+      ? dialog.showMessageBoxSync(parent, options)
+      : dialog.showMessageBoxSync(options)
+  return mapCloseDialogIndex(result)
+}
+
+function showMainWindow(): void {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    createMainWindow()
+    return
+  }
+  if (mainWindow.isMinimized()) mainWindow.restore()
+  mainWindow.show()
+  mainWindow.focus()
+}
+
+function hideMainWindow(): void {
+  if (!mainWindow || mainWindow.isDestroyed()) return
+  mainWindow.hide()
+}
+
+function quitApp(): void {
+  isQuitting = true
+  app.quit()
+}
+
+function handleMainCloseRequest(parent?: BrowserWindow | null): void {
+  const choice = askCloseMainOrQuit(parent)
+  if (choice === 'cancel') return
+  if (choice === 'app') {
+    quitApp()
+    return
+  }
+  hideMainWindow()
 }
 
 function createMainWindow(): void {
@@ -53,6 +104,12 @@ function createMainWindow(): void {
 
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show()
+  })
+
+  mainWindow.on('close', (event) => {
+    if (isQuitting) return
+    event.preventDefault()
+    handleMainCloseRequest(mainWindow)
   })
 
   mainWindow.on('closed', () => {
@@ -85,7 +142,7 @@ function widgetBounds(expanded: boolean): {
   const { width: sw } = display.workAreaSize
   const { x: wx, y: wy } = display.workArea
   const width = expanded ? 320 : 148
-  const height = expanded ? 240 : 48
+  const height = expanded ? 280 : 48
   return {
     width,
     height,
@@ -195,7 +252,11 @@ app.whenReady().then(() => {
     return
   }
 
-  registerIpc(db, expandWidget)
+  registerIpc(db, {
+    expandWidget,
+    showMainWindow,
+    requestCloseMain: () => handleMainCloseRequest(mainWindow),
+  })
 
   ipcMain.on('widget:collapsed', () => resizeWidget(false))
   ipcMain.on('widget:expanded', () => resizeWidget(true))
@@ -213,10 +274,15 @@ app.whenReady().then(() => {
   })
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createMainWindow()
+    // Dock / taskbar click: bring main window back (pill may already be running)
+    if (!widgetWindow || widgetWindow.isDestroyed()) {
       createWidgetWindow()
     }
+    showMainWindow()
+  })
+
+  app.on('before-quit', () => {
+    isQuitting = true
   })
 })
 
@@ -225,6 +291,7 @@ app.on('will-quit', () => {
   db?.close()
 })
 
+// Keep running with only the pill — do not quit when the main window is hidden.
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit()
+  // No-op: pill (or a hidden main) may still be intentional background UI.
 })
