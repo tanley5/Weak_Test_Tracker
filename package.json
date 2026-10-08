@@ -2,6 +2,7 @@
   "name": "weak-tracker",
   "version": "0.1.0",
   "description": "EA exam weak-area tracker",
+  "author": "tanley5",
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "npm run rebuild:electron && electron-vite dev",
@@ -11,7 +12,35 @@
     "test:watch": "npm run rebuild:node && vitest",
     "rebuild:node": "npm rebuild better-sqlite3",
     "rebuild:electron": "electron-builder install-app-deps",
-    "postinstall": "npm rebuild better-sqlite3"
+    "postinstall": "npm rebuild better-sqlite3",
+    "dist": "npm run build && electron-builder",
+    "dist:mac": "npm run build && electron-builder --mac dmg"
+  },
+  "build": {
+    "appId": "com.tanley.weaktracker",
+    "productName": "Weak-Area Tracker",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "**/*.{node,dll}"
+    ],
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.education",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "identity": null
+    },
+    "dmg": {
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    }
   },
   "dependencies": {
     "better-sqlite3": "^11.8.1",

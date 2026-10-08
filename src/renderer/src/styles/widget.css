@@ -1,11 +1,29 @@
 :root {
-  --pill-bg: rgba(20, 28, 36, 0.92);
-  --ink: #e8eef4;
-  --muted: #9aabbc;
-  --accent: #3d9a7a;
-  --danger: #c45c5c;
-  --line: #2c3a4a;
+  color-scheme: light dark;
+  --pill-bg: rgba(255, 255, 255, 0.94);
+  --ink: #14201a;
+  --muted: #5a6b62;
+  --accent: #2f7d62;
+  --accent-ink: #04140f;
+  --danger: #b24545;
+  --line: #c5d2cb;
+  --control-bg: #f2f5f3;
+  --reason-bg: #e4ebe7;
   --font: 'Segoe UI', 'Helvetica Neue', sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --pill-bg: rgba(20, 28, 36, 0.92);
+    --ink: #e8eef4;
+    --muted: #9aabbc;
+    --accent: #3d9a7a;
+    --accent-ink: #04140f;
+    --danger: #c45c5c;
+    --line: #2c3a4a;
+    --control-bg: #0f1419;
+    --reason-bg: #243040;
+  }
 }
 
 html,
@@ -65,7 +83,7 @@ select {
 
 .expanded select {
   width: 100%;
-  background: #0f1419;
+  background: var(--control-bg);
   color: var(--ink);
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -92,7 +110,7 @@ select {
 
 .ok {
   background: var(--accent);
-  color: #04140f;
+  color: var(--accent-ink);
 }
 
 .bad {
@@ -101,7 +119,7 @@ select {
 }
 
 .reason {
-  background: #243040;
+  background: var(--reason-bg);
   color: var(--ink);
   border: 1px solid var(--line);
   font-size: 0.8rem;

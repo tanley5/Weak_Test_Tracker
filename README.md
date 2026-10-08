@@ -9,8 +9,9 @@ Desktop EA exam practice logger (Electron + React + SQLite). Track per-question 
 - **Batch entry** — domain + correct/total + date → `batch_sessions`
 - **Floating widget** — always-on-top pill; expands on click, focus, or `Ctrl+Shift+Q` (⌘⇧Q on Mac)
 - **Dashboard** — needs-drilling list, heatmap, weekly trend, miss-reason breakdown
+- **System theme** — light/dark UI follows macOS (or OS) appearance
 
-## Install
+## Install (run from source)
 
 **Requirements:** Node.js 20+ (includes npm), macOS / Windows / Linux.
 
@@ -31,12 +32,30 @@ npm test
 
 SQLite data is stored in the Electron `userData` directory as `weak-tracker.db`.
 
+## macOS DMG (packaged app)
+
+Build an unsigned `.dmg` installer (output under `dist/`, gitignored):
+
+```bash
+npm install
+npm run dist:mac
+```
+
+Open the resulting file, e.g. `dist/Weak-Area Tracker-0.1.0-arm64.dmg`, and drag **Weak-Area Tracker** into Applications.
+
+Because the build is unsigned, Gatekeeper may block the first launch: right-click the app → **Open**, or clear the quarantine flag:
+
+```bash
+xattr -cr "/Applications/Weak-Area Tracker.app"
+```
+
 ## Develop
 
 ```bash
 npm test          # Vitest (rebuilds better-sqlite3 for Node)
 npm run dev       # Electron app (rebuilds better-sqlite3 for Electron)
 npm run build     # Production bundle under out/
+npm run dist:mac  # Build + package macOS DMG into dist/
 ```
 
 ## Domains
@@ -50,3 +69,4 @@ Core logic is TDD’d under `tests/`:
 - domains, stats aggregation, widget expand/collapse state machine
 - SQLite migrate / domain CRUD / today stats
 - batch form validation
+- system theme chart helpers

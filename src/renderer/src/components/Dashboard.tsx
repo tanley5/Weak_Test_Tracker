@@ -13,6 +13,7 @@ import {
 import type { DashboardData } from '../../../shared/api'
 import { accuracyColor } from '../../../shared/stats'
 import { formatPct } from '../lib/format'
+import { getChartTheme, subscribeSystemTheme, type ChartTheme } from '../lib/theme'
 
 type Props = {
   onBack: () => void
@@ -21,10 +22,17 @@ type Props = {
 export function Dashboard({ onBack }: Props) {
   const [data, setData] = useState<DashboardData | null>(null)
   const [domainFilter, setDomainFilter] = useState<string>('')
+  const [chartTheme, setChartTheme] = useState<ChartTheme>(() => getChartTheme())
 
   useEffect(() => {
     void window.weakTracker.getDashboard(domainFilter || undefined).then(setData)
   }, [domainFilter])
+
+  useEffect(() => {
+    const refresh = () => setChartTheme(getChartTheme())
+    refresh()
+    return subscribeSystemTheme(refresh)
+  }, [])
 
   const missChart = useMemo(() => {
     if (!data) return []
@@ -44,6 +52,11 @@ export function Dashboard({ onBack }: Props) {
         Loading dashboard…
       </div>
     )
+  }
+
+  const tooltipStyle = {
+    background: chartTheme.tooltipBg,
+    border: `1px solid ${chartTheme.border}`,
   }
 
   return (
@@ -109,18 +122,24 @@ export function Dashboard({ onBack }: Props) {
         <div className="chart-wrap">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data.weekly}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2c3a4a" />
-              <XAxis dataKey="weekStart" stroke="#9aabbc" />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+              <XAxis dataKey="weekStart" stroke={chartTheme.axis} />
               <YAxis
                 domain={[0, 1]}
                 tickFormatter={(v) => `${Math.round(Number(v) * 100)}%`}
-                stroke="#9aabbc"
+                stroke={chartTheme.axis}
               />
               <Tooltip
                 formatter={(value: number) => formatPct(value)}
-                contentStyle={{ background: '#1a222c', border: '1px solid #2c3a4a' }}
+                contentStyle={tooltipStyle}
               />
-              <Line type="monotone" dataKey="accuracy" stroke="#3d9a7a" strokeWidth={2} dot />
+              <Line
+                type="monotone"
+                dataKey="accuracy"
+                stroke={chartTheme.line}
+                strokeWidth={2}
+                dot
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -131,11 +150,11 @@ export function Dashboard({ onBack }: Props) {
         <div className="chart-wrap">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={missChart}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2c3a4a" />
-              <XAxis dataKey="name" stroke="#9aabbc" />
-              <YAxis allowDecimals={false} stroke="#9aabbc" />
-              <Tooltip contentStyle={{ background: '#1a222c', border: '1px solid #2c3a4a' }} />
-              <Bar dataKey="value" fill="#c9a227" radius={[8, 8, 0, 0]} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+              <XAxis dataKey="name" stroke={chartTheme.axis} />
+              <YAxis allowDecimals={false} stroke={chartTheme.axis} />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Bar dataKey="value" fill={chartTheme.bar} radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

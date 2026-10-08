@@ -1,4 +1,12 @@
-import { app, BrowserWindow, globalShortcut, ipcMain, screen, shell } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  globalShortcut,
+  ipcMain,
+  nativeTheme,
+  screen,
+  shell,
+} from 'electron'
 import { join } from 'path'
 import { openDatabase, type WeakTrackerDb } from './db'
 import { registerIpc } from './ipc'
@@ -16,6 +24,15 @@ function preloadPath(): string {
   return join(__dirname, '../preload/index.js')
 }
 
+function windowBackgroundColor(): string {
+  return nativeTheme.shouldUseDarkColors ? '#0f1419' : '#f2f5f3'
+}
+
+function syncWindowChromeTheme(): void {
+  const color = windowBackgroundColor()
+  mainWindow?.setBackgroundColor(color)
+}
+
 function createMainWindow(): void {
   mainWindow = new BrowserWindow({
     width: 1100,
@@ -23,6 +40,7 @@ function createMainWindow(): void {
     minWidth: 860,
     minHeight: 600,
     title: 'Weak-Area Tracker',
+    backgroundColor: windowBackgroundColor(),
     webPreferences: {
       preload: preloadPath(),
       contextIsolation: true,
@@ -128,6 +146,8 @@ function expandWidget(): void {
 }
 
 app.whenReady().then(() => {
+  nativeTheme.themeSource = 'system'
+
   const dbPath = join(app.getPath('userData'), 'weak-tracker.db')
   db = openDatabase(dbPath)
   registerIpc(db, expandWidget)
@@ -137,6 +157,10 @@ app.whenReady().then(() => {
 
   createMainWindow()
   createWidgetWindow()
+
+  nativeTheme.on('updated', () => {
+    syncWindowChromeTheme()
+  })
 
   globalShortcut.register('CommandOrControl+Shift+Q', () => {
     expandWidget()
