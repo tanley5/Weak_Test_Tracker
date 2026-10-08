@@ -39,10 +39,19 @@ function broadcastDomainsChanged(): void {
   }
 }
 
+function broadcastExamPartsChanged(): void {
+  for (const win of BrowserWindow.getAllWindows()) {
+    win.webContents.send('examParts:changed')
+  }
+}
+
 export function registerIpc(db: WeakTrackerDb, expandWidget: () => void): void {
   ipcMain.handle('settings:get', () => readSettings(db))
 
   ipcMain.handle('settings:setActiveExamPart', (_e, part: ExamPart) => {
+    if (!db.getExamPart(part)) {
+      throw new Error('Exam part not found')
+    }
     db.setSetting('active_exam_part', String(part))
     broadcastSettings(db)
     return readSettings(db)
@@ -91,6 +100,28 @@ export function registerIpc(db: WeakTrackerDb, expandWidget: () => void): void {
   ipcMain.handle('domains:delete', (_e, id: number) => {
     db.deleteDomain(id)
     broadcastDomainsChanged()
+  })
+
+  ipcMain.handle('examParts:list', () => db.listExamParts())
+
+  ipcMain.handle('examParts:create', (_e, name: string) => {
+    const row = db.createExamPart(name)
+    broadcastExamPartsChanged()
+    return row
+  })
+
+  ipcMain.handle('examParts:update', (_e, id: number, name: string) => {
+    const row = db.updateExamPart(id, name)
+    broadcastExamPartsChanged()
+    broadcastSettings(db)
+    return row
+  })
+
+  ipcMain.handle('examParts:delete', (_e, id: number) => {
+    db.deleteExamPart(id)
+    broadcastExamPartsChanged()
+    broadcastDomainsChanged()
+    broadcastSettings(db)
   })
 
   ipcMain.handle(

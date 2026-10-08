@@ -1,4 +1,4 @@
-import type { DomainRecord, ExamPart } from './domains'
+import type { DomainRecord, ExamPart, ExamPartRecord } from './domains'
 import type { MissReason } from './widgetState'
 import type { DomainAccuracy, MissReasonCounts, WeeklyBucket } from './stats'
 
@@ -44,8 +44,14 @@ export type WeakTrackerApi = {
   createDomain: (name: string) => Promise<DomainRecord>
   updateDomain: (id: number, name: string) => Promise<DomainRecord>
   deleteDomain: (id: number) => Promise<void>
+  listExamParts: () => Promise<ExamPartRecord[]>
+  createExamPart: (name: string) => Promise<ExamPartRecord>
+  updateExamPart: (id: number, name: string) => Promise<ExamPartRecord>
+  deleteExamPart: (id: number) => Promise<void>
   expandWidget: () => Promise<void>
   onSettingsChanged: (cb: (settings: AppSettings) => void) => () => void
   onDomainsChanged: (cb: () => void) => () => void
+  onExamPartsChanged: (cb: () => void) => () => void
   onExpandWidget: (cb: () => void) => () => void
+  onCollapseWidget: (cb: () => void) => () => void
 }

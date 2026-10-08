@@ -84,4 +84,14 @@ describe('widgetState', () => {
     expect(state.domains).toEqual(['Business Entities'])
     expect(state.domain).toBe('Business Entities')
   })
+
+  it('collapses to pill on blur without logging', () => {
+    let state = createWidgetState(['Income'], 'Income')
+    state = reduceWidget(state, { type: 'expand', trigger: 'click' })
+    state = reduceWidget(state, { type: 'collapse', now: 1_000 })
+    expect(state.expanded).toBe(false)
+    expect(state.step).toBe('idle')
+    expect(state.pendingLog).toBeNull()
+    expect(state.ignoreFocusUntil).toBeGreaterThan(1_000)
+  })
 })

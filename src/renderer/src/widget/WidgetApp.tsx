@@ -35,11 +35,15 @@ export function WidgetApp() {
       dispatch({ type: 'expand', trigger: 'hotkey' })
       window.widgetShell?.notifyExpanded()
     })
+    const offCollapse = window.weakTracker.onCollapseWidget(() => {
+      dispatch({ type: 'collapse' })
+    })
 
     return () => {
       offSettings()
       offDomains()
       offExpand()
+      offCollapse()
     }
   }, [])
 

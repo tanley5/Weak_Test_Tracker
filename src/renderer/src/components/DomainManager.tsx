@@ -4,10 +4,11 @@ import { validateDomainName } from '../../../shared/domains'
 
 type Props = {
   examPart: number
+  examPartName: string
   onBack: () => void
 }
 
-export function DomainManager({ examPart, onBack }: Props) {
+export function DomainManager({ examPart, examPartName, onBack }: Props) {
   const [domains, setDomains] = useState<DomainRecord[]>([])
   const [newName, setNewName] = useState('')
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -89,7 +90,7 @@ export function DomainManager({ examPart, onBack }: Props) {
       </button>
       <h1 className="brand">Domains</h1>
       <p className="lede">
-        Manage the Part {examPart} domain list used by the floating widget and batch entry.
+        Manage the {examPartName} domain list used by the floating widget and batch entry.
       </p>
 
       <section className="panel" style={{ marginBottom: 16 }}>
@@ -111,7 +112,7 @@ export function DomainManager({ examPart, onBack }: Props) {
       </section>
 
       <section className="panel">
-        <h2>Part {examPart} list</h2>
+        <h2>{examPartName} list</h2>
         {domains.length === 0 ? (
           <p className="lede">No domains yet — add the HOCK breakdown for this part.</p>
         ) : (

@@ -4,10 +4,11 @@ Desktop EA exam practice logger (Electron + React + SQLite). Track per-question 
 
 ## Features
 
-- **Active exam part** (1 / 2 / 3) — widget and forms always use the active part’s domain list
-- **Domain list CRUD** — add, rename, and delete domains per exam part in **Manage domains** (Part 1 is seeded; Part 2/3 start empty; renames update historical logs)
+- **Active exam part** — pick the part you’re drilling; the floating widget always uses that part’s domains
+- **Exam part CRUD** — add, rename, or delete parts in **Manage exam parts** (seeded Part 1–3; cannot delete the last part or a part with logged data)
+- **Domain list CRUD** — add, rename, and delete domains per active part in **Manage domains** (Part 1 is seeded; renames update historical logs)
 - **Batch entry** — domain + correct/total + date → `batch_sessions`
-- **Floating widget** — always-on-top pill; expands on click, focus, or `Ctrl+Shift+Q` (⌘⇧Q on Mac)
+- **Floating widget** — always-on-top pill; expands on click, focus, or `Ctrl+Shift+Q` (⌘⇧Q on Mac); **collapses back to pill when focus leaves**
 - **Dashboard** — needs-drilling list, heatmap, weekly trend, miss-reason breakdown
 - **System theme** — light/dark UI follows macOS (or OS) appearance
 
@@ -54,21 +55,22 @@ xattr -cr "/Applications/Weak-Area Tracker.app"
 ## Develop
 
 ```bash
-npm test          # Vitest (rebuilds better-sqlite3 for Node)
-npm run dev       # Electron app (rebuilds better-sqlite3 for Electron)
+npm test          # Vitest (Node sqlite → tests → restore Electron sqlite)
+npm run dev       # Electron app
 npm run build     # Production bundle under out/
 npm run dist:mac  # Build + package macOS DMG into dist/
 ```
 
-## Domains
+## Domains & exam parts
 
-Part 1 ships with a seeded list. Use **Manage domains** in the app to add, rename, or delete domains for the active exam part. Renames rewrite historical attempt/batch labels for that part; deletes remove the domain from dropdowns but keep past logs.
+- **Manage exam parts** — CRUD for Part 1 / 2 / 3 (and any extras you add). Switching the active part on Home updates the widget immediately.
+- **Manage domains** — CRUD for the *active* part’s domain list. Renames rewrite historical attempt/batch labels for that part; deletes remove the domain from dropdowns but keep past logs.
 
 ## Tests
 
 Core logic is TDD’d under `tests/`:
 
-- domains, stats aggregation, widget expand/collapse state machine
-- SQLite migrate / domain CRUD / today stats
+- domains, exam parts, stats aggregation, widget expand/collapse (including blur → pill)
+- SQLite migrate / CRUD / today stats
 - batch form validation
 - system theme chart helpers

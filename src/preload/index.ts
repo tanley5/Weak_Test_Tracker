@@ -21,6 +21,10 @@ const api: WeakTrackerApi = {
   createDomain: (name: string) => ipcRenderer.invoke('domains:create', name),
   updateDomain: (id: number, name: string) => ipcRenderer.invoke('domains:update', id, name),
   deleteDomain: (id: number) => ipcRenderer.invoke('domains:delete', id),
+  listExamParts: () => ipcRenderer.invoke('examParts:list'),
+  createExamPart: (name: string) => ipcRenderer.invoke('examParts:create', name),
+  updateExamPart: (id: number, name: string) => ipcRenderer.invoke('examParts:update', id, name),
+  deleteExamPart: (id: number) => ipcRenderer.invoke('examParts:delete', id),
   expandWidget: () => ipcRenderer.invoke('widget:expand'),
   onSettingsChanged: (cb) => {
     const listener = (_: Electron.IpcRendererEvent, settings: unknown) => {
@@ -34,10 +38,20 @@ const api: WeakTrackerApi = {
     ipcRenderer.on('domains:changed', listener)
     return () => ipcRenderer.removeListener('domains:changed', listener)
   },
+  onExamPartsChanged: (cb) => {
+    const listener = () => cb()
+    ipcRenderer.on('examParts:changed', listener)
+    return () => ipcRenderer.removeListener('examParts:changed', listener)
+  },
   onExpandWidget: (cb) => {
     const listener = () => cb()
     ipcRenderer.on('widget:expand', listener)
     return () => ipcRenderer.removeListener('widget:expand', listener)
+  },
+  onCollapseWidget: (cb) => {
+    const listener = () => cb()
+    ipcRenderer.on('widget:collapse', listener)
+    return () => ipcRenderer.removeListener('widget:collapse', listener)
   },
 }
 

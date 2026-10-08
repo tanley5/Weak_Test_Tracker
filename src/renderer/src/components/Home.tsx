@@ -1,22 +1,23 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { AppSettings, TodayStats } from '../../../shared/api'
-import type { ExamPart } from '../../../shared/domains'
+import type { ExamPart, ExamPartRecord } from '../../../shared/domains'
 import { daysUntil } from '../../../shared/stats'
 import { formatPct, todayIsoLocal } from '../lib/format'
 import { BatchEntryModal } from './BatchEntryModal'
 
 type Props = {
   onOpenDashboard: () => void
-  onOpenDomains: (part: ExamPart) => void
+  onOpenDomains: (part: ExamPart, name: string) => void
+  onOpenExamParts: () => void
 }
 
-export function Home({ onOpenDashboard, onOpenDomains }: Props) {
+export function Home({ onOpenDashboard, onOpenDomains, onOpenExamParts }: Props) {
   const [settings, setSettings] = useState<AppSettings | null>(null)
   const [today, setToday] = useState<TodayStats | null>(null)
   const [running, setRunning] = useState<TodayStats | null>(null)
   const [domains, setDomains] = useState<string[]>([])
+  const [examParts, setExamParts] = useState<ExamPartRecord[]>([])
   const [showBatch, setShowBatch] = useState(false)
-
   const [loadError, setLoadError] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
@@ -25,16 +26,18 @@ export function Home({ onOpenDashboard, onOpenDomains }: Props) {
       return
     }
     try {
-      const [s, t, r, d] = await Promise.all([
+      const [s, t, r, d, parts] = await Promise.all([
         window.weakTracker.getSettings(),
         window.weakTracker.getTodayStats(),
         window.weakTracker.getRunningAccuracy(),
         window.weakTracker.getDomains(),
+        window.weakTracker.listExamParts(),
       ])
       setSettings(s)
       setToday(t)
       setRunning(r)
       setDomains(d)
+      setExamParts(parts)
       setLoadError(null)
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : 'Failed to load data')
@@ -50,9 +53,13 @@ export function Home({ onOpenDashboard, onOpenDomains }: Props) {
     const offDomains = window.weakTracker.onDomainsChanged(() => {
       void refresh()
     })
+    const offParts = window.weakTracker.onExamPartsChanged(() => {
+      void refresh()
+    })
     return () => {
       offSettings()
       offDomains()
+      offParts()
     }
   }, [refresh])
 
@@ -81,6 +88,9 @@ export function Home({ onOpenDashboard, onOpenDomains }: Props) {
   }
 
   const remaining = daysUntil(settings.target_exam_date, todayIsoLocal())
+  const activePart =
+    examParts.find((p) => p.id === settings.active_exam_part) ??
+    ({ id: settings.active_exam_part, name: `Part ${settings.active_exam_part}`, sort_order: 0 } as ExamPartRecord)
 
   return (
     <div className="app-shell">
@@ -96,11 +106,13 @@ export function Home({ onOpenDashboard, onOpenDomains }: Props) {
           <select
             id="exam-part"
             value={settings.active_exam_part}
-            onChange={(e) => void onPartChange(Number(e.target.value) as ExamPart)}
+            onChange={(e) => void onPartChange(Number(e.target.value))}
           >
-            <option value={1}>Part 1</option>
-            <option value={2}>Part 2</option>
-            <option value={3}>Part 3</option>
+            {examParts.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
           </select>
         </div>
         <div className="field">
@@ -113,7 +125,7 @@ export function Home({ onOpenDashboard, onOpenDomains }: Props) {
           />
         </div>
         <div className="countdown" data-testid="countdown">
-          <span>{remaining}</span> days to Part {settings.active_exam_part} target
+          <span>{remaining}</span> days to {activePart.name} target
         </div>
       </div>
 
@@ -123,7 +135,7 @@ export function Home({ onOpenDashboard, onOpenDomains }: Props) {
           <div className="value">{today.questionsLogged}</div>
         </div>
         <div className="stat">
-          <div className="label">Running accuracy (Part {settings.active_exam_part})</div>
+          <div className="label">Running accuracy ({activePart.name})</div>
           <div className="value">{formatPct(running.accuracy)}</div>
         </div>
       </div>
@@ -141,16 +153,18 @@ export function Home({ onOpenDashboard, onOpenDomains }: Props) {
         <button
           type="button"
           className="secondary"
-          onClick={() => onOpenDomains(settings.active_exam_part)}
+          onClick={() => onOpenDomains(activePart.id, activePart.name)}
         >
           Manage domains
+        </button>
+        <button type="button" className="secondary" onClick={onOpenExamParts}>
+          Manage exam parts
         </button>
       </div>
 
       {domains.length === 0 && (
         <p className="error">
-          No domains configured for Part {settings.active_exam_part} yet. Use Manage domains to
-          add them.
+          No domains configured for {activePart.name} yet. Use Manage domains to add them.
         </p>
       )}
 

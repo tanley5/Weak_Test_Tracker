@@ -141,6 +141,12 @@ function createWidgetWindow(): void {
     widgetWindow?.webContents.send('widget:expand')
   })
 
+  widgetWindow.on('blur', () => {
+    // Clicking away / switching apps → collapse back to pill
+    resizeWidget(false)
+    widgetWindow?.webContents.send('widget:collapse')
+  })
+
   widgetWindow.webContents.on('did-fail-load', (_e, code, desc, url) => {
     console.error('Widget failed to load', { code, desc, url })
   })
